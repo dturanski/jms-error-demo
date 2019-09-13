@@ -1,9 +1,6 @@
 package dturanski.jms.mq.demo;
 
 import javax.jms.ConnectionFactory;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.TextMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,18 +45,7 @@ public class JmsMqDemoApplication implements JmsListenerConfigurer {
     public JmsListenerContainerFactory<?> containerFactory(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
-        factory.setErrorHandler(t-> {
-            logger.error(t.getMessage(), t);
-            if (t instanceof JmsMessageException) {
-                Message message = ((JmsMessageException)t).getJmsMessage();
-                try {
-                    message.acknowledge();
-                    logger.info("acknowledged " + message);
-                } catch (JMSException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        factory.setErrorHandler(t-> logger.error(t.getMessage(), t) );
         factory.setMessageConverter(messageConverter);
         return factory;
     }
@@ -83,36 +69,12 @@ public class JmsMqDemoApplication implements JmsListenerConfigurer {
 
     @Component
     public class Receiver {
-
-        @Autowired
-        private MessageConverter converter;
-
-        @JmsListener(destination = "DEV.QUEUE.1", id = "receiver", containerFactory = "containerFactory")
-        public void receiveMessage(TextMessage message) throws Exception {
-            Email email = (Email) converter.fromMessage(message);
+        @JmsListener(destination = "DEV.QUEUE.1", id = "receiver",containerFactory = "containerFactory")
+        public void receiveMessage(Email email) {
             System.out.println("Received <" + email + ">");
             if (email.getTo().equals("info@example.com")) {
-               throw new JmsMessageException(message, "bad recipient");
+               throw new RuntimeException("bad recipient");
             }
         }
     }
-
-    public class JmsMessageException extends RuntimeException {
-        private final Message jmsMessage;
-
-        public JmsMessageException(Message jmsMessage, String message) {
-            super(message);
-            this.jmsMessage = jmsMessage;
-        }
-
-        public JmsMessageException(Message jmsMessage, String message, Throwable cause) {
-            super(message, cause);
-            this.jmsMessage = jmsMessage;
-        }
-
-        public Message getJmsMessage() {
-            return jmsMessage;
-        }
-    }
-
 }
