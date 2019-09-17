@@ -1,6 +1,6 @@
 # jms-error-demo
 
-
+```java
 public static class ByteStringMessageConverter extends SimpleMessageConverter {
         @Override
         public Object fromMessage(Message message) throws JMSException, MessageConversionException {
@@ -10,4 +10,5 @@ public static class ByteStringMessageConverter extends SimpleMessageConverter {
             }
             return obj;
         }
-    }
+} 
+```    
